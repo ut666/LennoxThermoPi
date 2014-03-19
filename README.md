@@ -24,4 +24,6 @@ https://addons.mozilla.org/en-us/firefox/addon/cookie-exporter/
 index.html
 
 This is a simple html page that uses the Google Graph API to allow you to do your plots.
-An example from this page is shown in the Example.png
+An example from this page is shown below
+
+![ScreenShot](Example.png)
