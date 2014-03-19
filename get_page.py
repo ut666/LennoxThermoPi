@@ -5,7 +5,7 @@ import datetime
 url = 'https://www.myicomfort.com/Dashboard.aspx'
 txheaders =  {'User-agent' : 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'}
 
-cj = cookielib.MozillaCookieJar('C:\Users\jerome.avondo\Desktop\lennox\cookie.txt')
+cj = cookielib.MozillaCookieJar('cookie.txt')
 cj.load() 
 
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -32,7 +32,7 @@ print("Heat to: " + str(heat) + " Cool to: " + str(cool))
 
 dt = datetime.datetime.now().strftime("%Y, %m, %d, %H, %M")
 
-myFile = open('C:\Users\jerome.avondo\Desktop\lennox\data.txt', 'a')
+myFile = open('data.txt', 'a')
 myFile.write(dt + ", " + str(temp) + ", " + str(humid) + ", " + str(heat) + ", " + str(cool) + ", " + str(status) + "\n")	
 myFile.close()
 
