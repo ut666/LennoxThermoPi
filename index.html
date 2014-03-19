@@ -1,0 +1,261 @@
+<html>
+	<head>
+	<meta charset="utf-8" />
+	<title>ThermoPi</title>	
+		<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+		<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+		<script src="//code.jquery.com/jquery-1.9.1.js"></script>
+		<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+		<script type="text/javascript">
+			
+			$(document).ready(function(){
+				$("#datepicker-start").val(startDate.toLocaleDateString());
+				$("#datepicker-end").val(endDate.toLocaleDateString());				
+				$(window).resize(function(){
+						drawChart();
+				});				
+			});
+			
+			// Load the Visualization API and the piechart package.
+      google.load('visualization', '1.0', {'packages':['corechart']});
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.setOnLoadCallback(drawChart);
+
+			var dataArray = [];
+			
+			var startDate = new Date("03/01/2014");
+			var endDate = new Date();
+			
+			//load our raw data
+			jQuery.ajaxSetup({async:false});
+			$.get('data.txt', {}, function(data) 
+			{
+				dataArray = createArray(data);
+			});
+			jQuery.ajaxSetup({async:true});
+
+			// Callback that creates and populates a data table,
+      // instantiates the chart, passes in the data and
+      // draws it.
+      function drawChart() 
+			{
+				console.log("Updating Chart");
+				
+				var dayData = dayArray(startDate, endDate, dataArray);
+				var statusData = statusArray(startDate, endDate, dataArray);
+				
+				var columnsTable = new google.visualization.DataTable();
+				columnsTable.addColumn('number', 'colIndex');
+				columnsTable.addColumn('string', 'colLabel');
+				var initState= {selectedValues: []};
+				// put the columns into this data table (skip column 0)
+				for (var i = 1; i < dayData.getNumberOfColumns(); i++)
+				{
+					columnsTable.addRow([i, dayData.getColumnLabel(i)]);
+					initState.selectedValues.push(dayData.getColumnLabel(i));
+				}
+				
+        var options = {
+          title : 'Thermostat log',
+          vAxis: {title: "Temperature"},
+          hAxis: {title: "Time",  format: 'dd/MM HH:MM'},
+					dateFormat: 'dd.MM.yy hh:mm',
+          seriesType: "line",
+        };
+				
+				var tempChart = new google.visualization.ChartWrapper({
+        chartType: 'LineChart',
+        containerId: 'temp_chart',
+        dataTable: dayData,
+				options: options
+				});
+				
+				tempChart.draw();
+				
+		    var options = {
+          title: 'Thermostat status',
+          pieHole: 0.4,		
+        };
+        var statusChart = new google.visualization.PieChart(document.getElementById('status_chart'));
+        statusChart.draw(statusData, options);	
+				
+						
+				var columnFilter = new google.visualization.ControlWrapper({
+						controlType: 'CategoryFilter',
+						containerId: 'status_control',
+						dataTable: columnsTable,
+						options: {
+								filterColumnLabel: 'colLabel',
+								ui: {
+										label: '',
+										allowTyping: false,
+										allowMultiple: true,
+										selectedValuesLayout: 'belowStacked'
+								}
+						},
+						state: initState
+				});
+
+				google.visualization.events.addListener(columnFilter, 'statechange', function () 
+				{
+						var state = columnFilter.getState();
+						var row;
+						var columnIndices = [0];
+						for (var i = 0; i < state.selectedValues.length; i++) 
+						{
+								row = columnsTable.getFilteredRows([{column: 1, value: state.selectedValues[i]}])[0];
+								columnIndices.push(columnsTable.getValue(row, 0));
+						}
+						// sort the indices into their original order
+						columnIndices.sort(function (a, b) {
+								return (a - b);
+						});
+						tempChart.setView({columns: columnIndices});
+						tempChart.draw();
+				});
+
+				columnFilter.draw();				
+			}
+			function createArray(csvString)
+			{
+				linesArray =	csvString.split('\n');
+			  var dataArray = new Array(linesArray.length);
+				for ( var i = 0; i < linesArray.length; i++)
+				{
+					//get our line, 
+					//and split into cells
+					line = linesArray[i];
+					cells = line.split(',');
+	
+					//ignore bad lines
+					if(cells.length != 10)
+						continue;
+					
+					//ignore the header
+					if( i == 0 )
+						continue;
+					
+					//create some entries
+					dataArray[i] = [];
+					
+					//build up our date
+					var date = new Date(cells[0], cells[1]-1, cells[2], cells[3], cells[4]);
+					//console.log(date.toDateString());
+					
+					dataArray[i][0] = date;
+					dataArray[i][1] = parseFloat(cells[5].trim());
+					dataArray[i][2] = parseFloat(cells[6].trim());
+					dataArray[i][3] = parseFloat(cells[7].trim());
+					dataArray[i][4] = parseFloat(cells[8].trim());
+					dataArray[i][5] = cells[9].trim();
+				}
+				
+				return dataArray;
+			}
+	
+			function dayArray(startDate, endDate, array)
+			{
+				var data = new google.visualization.DataTable();
+				// Declare columns
+				data.addColumn('datetime', 'Time');
+				data.addColumn('number', 'Temperature');
+				data.addColumn('number', 'Humidity');
+				data.addColumn('number', 'Min');
+				data.addColumn('number', 'Max');
+				data.addRows(array.length);
+				
+				for ( var i = 1; i < array.length-1; i++)
+				{
+					if( array[i][0] >= startDate && array[i][0] <= endDate )
+					{
+						var date = new Date(array[i][0].getFullYear(), array[i][0].getMonth(), array[i][0].getDate(), array[i][0].getHours(), array[i][0].getMinutes());
+						data.setCell(i, 0, date);
+						data.setCell(i, 1, array[i][1]);
+						data.setCell(i, 2, array[i][2]);
+						data.setCell(i, 3, array[i][3]);
+						data.setCell(i, 4, array[i][4]);
+					}
+				}
+				return data;
+			}
+			
+			function statusArray(startDate, endDate, array)
+			{
+				var data = new google.visualization.DataTable();
+				// Declare columns
+				data.addColumn('string', 'Status');
+				data.addColumn('number', 'Hours');
+				data.addRows(3);
+
+				heating = 0;
+				cooling = 0;
+				idle = 0;
+				
+				for ( var i = 1; i < array.length-1; i++)
+				{
+					if( array[i][0] >= startDate && array[i][0] <= endDate )
+					{
+						//console.log( array[i][0].toDateString() );
+						
+						if( array[i][5] == "heating" )
+							heating = heating + 1;
+						if( array[i][5] == "idle" )
+							idle = idle + 1;
+						if( array[i][5] == "cooling" )
+							cooling = cooling + 1;
+					}
+				}
+
+				data.setCell(0, 0, 'heating');
+				data.setCell(1, 0, 'cooling');
+				data.setCell(2, 0, 'idle');
+
+				//convert from 1/2hrs to hrs
+				data.setCell(0, 1, heating/2.0);
+				data.setCell(1, 1, cooling/2.0);
+				data.setCell(2, 1, idle/2.0);
+				
+				return data;			
+			}
+			jQuery(function() {
+				jQuery( "#datepicker-start" ).datepicker(
+				{
+					onSelect: updateStart				
+				}
+				);
+			});
+			jQuery(function() {
+				jQuery( "#datepicker-end" ).datepicker(
+				{		
+					onSelect: updateEnd
+				}
+				);
+			});	
+			function updateStart(curDate, instance)
+			{
+				startDate = new Date(curDate);
+				drawChart();			
+			}
+			function updateEnd(curDate, instance)
+			{
+				endDate = new Date(curDate);
+				drawChart();			
+			}
+		</script>
+	</head>
+	<body>
+		
+		<div style="width:25%; text-align:center;">
+		<div>Start Date: <input type="text" id="datepicker-start"></div>
+		<div>End Date: <input type="text" id="datepicker-end"></div>	
+		</div>
+		
+		<div id="status_chart" style="width:50%;"></div>
+		<div style="width:80%; display:inline-block;">
+			<div id="temp_chart"></div>
+		</div><div style="width:20%; display:inline-block;">
+			<div id="status_control"></div>
+		</div>
+		
+	</body>
+</html>
