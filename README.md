@@ -20,6 +20,7 @@ Note you will need to create your own cookie.txt file, to authenticate to the le
 I used something like:
 https://addons.mozilla.org/en-us/firefox/addon/cookie-exporter/
 
+Then just set this python script to run at a given interval. For example I have this setup as a cron job to run every 30 minutes.
 
 index.html
 
