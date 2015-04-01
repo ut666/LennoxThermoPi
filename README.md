@@ -3,7 +3,7 @@ LennoxThermoPi
 
 Log data from your Lennox iComfort thermostat.
 
-Since Lennox don't provide any API to communicate with the iComfort thermostat, I created the following.
+Since Lennox don't provide any public API to communicate with the iComfort thermostat, I created the following.
 
 get_page.py
 --------------
