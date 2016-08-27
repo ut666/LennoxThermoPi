@@ -1,3 +1,6 @@
+
+NEW/IMPROVED VERSION: https://github.com/ut666/LennoxThermoPi-II
+
 LennoxThermoPi
 ==============
 
